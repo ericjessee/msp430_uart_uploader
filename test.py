@@ -1,5 +1,12 @@
 import serial
 import time
+from checksum import append_checksum, reverse_byte_order
+
+sync_char = b'\x80'
+ack_char = b'\x90'
+ver_query_msg = append_checksum(b'\x80\x1e\x04\x04\xde\xad\xbe\xef')
+read_bytes_msg = b''
+
 
 # Configure the serial port
 port_name = "/dev/ttyUSB0"  # Replace with your port name, e.g., "COM3" on Windows or "/dev/ttyUSB0" on Linux
@@ -14,6 +21,7 @@ try:
     ser = serial.Serial(
         port=port_name,
         baudrate=baud_rate,
+        parity="E",
         timeout=1,
         rtscts=True,  # Enables RTS/CTS flow control
         dsrdtr=True   # Ensures DTR is used
@@ -36,13 +44,22 @@ try:
 
     ser.rtscts=False
     ser.dsrdtr=False
+
     time.sleep(0.01)
-    ser.write(b'\x80')
+    ser.write(sync_char)
     ser.flush()
     byte = ser.read(1)
-    print(byte)
+    if (byte == ack_char):
+        print("got ACK from msp430")
+    else:
+        print("no response from msp430!")
+        exit()
+    
+    #print(ver_query_msg)
+    ser.write(ver_query_msg)
+    resp = ser.read(16)
+    print(resp)
 
-#    pulse()
 
 except serial.SerialException as e:
     print(f"Error: {e}")
@@ -50,5 +67,4 @@ finally:
     # Close the serial port
     if 'ser' in locals() and ser.is_open:
         ser.close()
-        print("Serial port closed.")
 
