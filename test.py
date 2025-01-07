@@ -1,6 +1,6 @@
 import serial
 import time
-from queries import ver_query_msg, read_mem_query, password_unlock_cmd
+from queries import ver_query_msg, mass_erase_cmd, read_mem_query, password_unlock_cmd, write_mem_cmd
 
 
 # Configure the serial port
@@ -29,8 +29,6 @@ def sync():
     ser.flush()
     wait_ack()
     return
-
-
 
 try:
     # Open the serial port with hardware flow control (RTS/CTS enabled)
@@ -73,6 +71,12 @@ try:
     print(f'got device family: {family}, BSL ver: {bsl_ver}')
 
     sync()
+    print("clearing flash contents")
+    ser.write(mass_erase_cmd)
+    wait_ack()
+    print("flash erase success")
+
+    sync()
     print(f'attempting to unlock memory')
     #generate the default password:
     password = bytearray()
@@ -84,20 +88,34 @@ try:
     print("memory unlock success")
 
     sync()
-    print(f'reading from memory')
-    read_addr_str = "0f00"
-    len_str = "000e"
-    cmd = read_mem_query(bytes.fromhex("0f00"), bytes.fromhex("000e"))
+    print("writing to memory")
+    test_data = bytearray()
+    toggle = True
+    for i in range(16):
+        if toggle:
+            test_data.append(0xab)
+            toggle = not toggle
+        else:
+            test_data.append(0xcd)
+            toggle = not toggle
+    print(test_data)
+    addr_str = "1000"
+    cmd = write_mem_cmd(bytes.fromhex(addr_str), test_data)
     ser.write(cmd)
-    resp = ser.read(20)
+    wait_ack()
+
+    sync()
+    print(f'reading from memory')
+    addr_str = "1000"
+    len_str = "0020"
+    cmd = read_mem_query(bytes.fromhex(addr_str), bytes.fromhex(len_str))
+    ser.write(cmd)
+    resp = ser.read(int(len_str, 16)+6)
     if resp == b'\xa0':
         print("msp430 refused request!")
     blocklen = resp[2]
     for idx, bt in enumerate(resp[4:4+blocklen]):
-        print(f'{hex(int(read_addr_str, 16) + idx)}: {hex(bt)}')
-
-    sync()
-
+        print(f'{hex(int(addr_str, 16) + idx)}: {hex(bt)}')
     
 
 except serial.SerialException as e:
