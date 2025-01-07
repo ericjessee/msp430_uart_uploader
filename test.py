@@ -8,8 +8,11 @@ get_bsl_ver(ser)
 clear_flash(ser)
 unlock_memory(ser)
 bin_data = read_bin('fet120_1.bin')
+test_data = gen_test_data(44)
+data = bin_data
 addr_str = "f000"
 addr_bytes = bytes.fromhex(addr_str)
-write_data(ser, addr_bytes, bin_data)
+write_data(ser, addr_bytes, data)
+#read_data(ser, addr_bytes, len(data))
 write_pc(ser, addr_bytes)
 print("done. exiting...")

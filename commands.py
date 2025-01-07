@@ -59,6 +59,18 @@ def dump_msg_contents(msg):
         print(f'{idx}: {hex(bt)}')
     return
 
+def gen_test_data(length):
+    test_data = bytearray()
+    toggle = True
+    for i in range(length):
+        if toggle:
+            test_data.append(0xab)
+            toggle = not toggle
+        else:
+            test_data.append(0xcd)
+            toggle = not toggle
+    return test_data
+
 def read_bin(filename):
     bin_data = bytearray()
     with open(filename, 'rb') as file:
@@ -107,16 +119,16 @@ def write_data(ser, address, data):
     return
 
 def read_data(ser, address, length):
-    sync()
+    sync(ser)
     print(f'reading from memory')
     cmd = read_mem_query(address, length)
     ser.write(cmd)
-    resp = ser.read(len+6)
+    resp = ser.read(length+6)
     if resp == b'\xa0':
         print("msp430 refused request!")
     blocklen = resp[2]
     for idx, bt in enumerate(resp[4:4+blocklen]):
-        print(f'{hex(address + idx)}: {hex(bt)}')
+        print(f'{hex(int.from_bytes(address, "big") + idx)}: {hex(bt)}')
     return
 
 def write_pc(ser, address):
