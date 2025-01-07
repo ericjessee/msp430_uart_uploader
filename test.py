@@ -1,6 +1,6 @@
 import serial
 import time
-from queries import ver_query_msg, mass_erase_cmd, read_mem_query, password_unlock_cmd, write_mem_cmd
+from queries import *
 
 
 # Configure the serial port
@@ -87,8 +87,19 @@ try:
     wait_ack()
     print("memory unlock success")
 
+    
+    
     sync()
-    print("writing to memory")
+    print("downloading program to memory")
+    bin_data = bytearray()
+    with open("fet120_1.bin", 'rb') as file:
+        byte = file.read(1)
+        while byte != b'':
+            bin_data.append(byte[0])
+            byte=file.read(1)
+    for idx, bt in enumerate(bin_data):
+        print(f'{idx}: {hex(bt)}')
+
     test_data = bytearray()
     toggle = True
     for i in range(16):
@@ -99,23 +110,35 @@ try:
             test_data.append(0xcd)
             toggle = not toggle
     print(test_data)
-    addr_str = "1000"
-    cmd = write_mem_cmd(bytes.fromhex(addr_str), test_data)
+
+    #data = test_data
+    data = bin_data
+
+    addr_str = "f000"
+    cmd = write_mem_cmd(bytes.fromhex(addr_str), data)
     ser.write(cmd)
     wait_ack()
 
     sync()
     print(f'reading from memory')
-    addr_str = "1000"
-    len_str = "0020"
-    cmd = read_mem_query(bytes.fromhex(addr_str), bytes.fromhex(len_str))
+    # addr_str = "1000"
+    # len_str = "0020"
+    len = len(data)
+    cmd = read_mem_query(bytes.fromhex(addr_str), len)
     ser.write(cmd)
-    resp = ser.read(int(len_str, 16)+6)
+    resp = ser.read(len+6)
     if resp == b'\xa0':
         print("msp430 refused request!")
     blocklen = resp[2]
     for idx, bt in enumerate(resp[4:4+blocklen]):
         print(f'{hex(int(addr_str, 16) + idx)}: {hex(bt)}')
+
+    sync()
+    print(f'updating PC for program start')
+    # addr_str = "f000"
+    cmd = load_pc_cmd(bytes.fromhex(addr_str))
+    ser.write(cmd)
+    wait_ack
     
 
 except serial.SerialException as e:
