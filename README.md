@@ -20,3 +20,6 @@ Pin connections are as follows (assuming an MSP430F1122):
 
 
 The FTDI chip seems to invert the signals by default, so your mileage may vary (may just need to swap the "True" and "False" in the invocation sequence)
+
+Software considerations:
+You'll need the MSP430 gcc toolchain from ti. This script mostly assumes that you have the toolchain in ~/ti/gcc/bin, but there may be some lingering absolute paths that you'll need to fix for your setup. 
