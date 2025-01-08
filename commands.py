@@ -110,6 +110,8 @@ def clear_flash(ser):
     print("flash erase success")
     return
 
+#TODO: for data greater than 255 bytes, divide into chunks
+#(right now only up to 255 is supported)
 def write_data(ser, address, data):
     sync(ser)
     print(f'loading {len(data)} bytes to address 0x{address.hex()}')
