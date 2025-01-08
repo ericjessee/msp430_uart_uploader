@@ -2,6 +2,7 @@ import os
 
 def extract_segments(filename):
     os.system(f'mkdir -p elf_data')
+    os.system(f'rm -f elf_data/*')
     os.system(f'~/ti/gcc/bin/msp430-elf-readelf -t {filename} > elf_data/sections.txt')
     segments = [filename] #place filename at first position in list
     with open("elf_data/sections.txt", 'r') as sections:
