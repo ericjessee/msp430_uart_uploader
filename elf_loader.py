@@ -1,39 +1,35 @@
 import os
+import sys
 
 def extract_segments(filename):
-    os.system(f'~/ti/gcc/bin/msp430-elf-readelf -S {filename} > sections.txt')
+    os.system(f'~/ti/gcc/bin/msp430-elf-readelf -t {filename} > sections.txt')
     with open("sections.txt", 'r') as sections:
         top = False
-        bottom = False
         segments = []
+        sec_pos = 0
+        seg={}
         for line in sections:
-            if "Section Headers" in line:
+            if "[ 1]" in line:
                 top=True
             if top:
-                if "Key to Flags" in line:
-                    bottom = True
-                elif not bottom:
-                    items = line[7:].split() #split line
-                    try: 
-                        if not (items[6].isnumeric()) and (items[6] != "Flg"):
-                            segments.append(items)
-                    except IndexError:
-                        pass
+                if sec_pos == 0: #name
+                    seg['name'] = line[7:].split()[0]
+                    sec_pos = 1
+                elif sec_pos == 1:
+                    seg['addr'] = line[7:].split()[1]
+                    sec_pos = 2
+                elif sec_pos == 2:
+                    seg['tags'] = line[7:].split()[1:]
+                    segments.append(seg.copy())
+                    sec_pos = 0
         return segments
     
 def extract_bin_data(segments):
-    no_init_addr = 0
     for segment in segments:
         print(segment)
-        if segment[0] == ".noinit":
-            no_init_addr = int(segment[2], 16) + int(segment[3], 16)
-            print(f'skipping non-initialized segments at address {hex(no_init_addr)}')
-            break
-    for segment in segments:
-        addr = int(segment[2], 16) + int(segment[3], 16)
-        if addr != no_init_addr:
-            os.system(f'')
 
 if __name__ == "__main__":
-    segments = extract_segments("fet120_1.out")
+    #filename = sys.argv[1]
+    filename="/home/eric/ti/msp/MSP430Ware_3_80_14_01/examples/devices/MSP430F1xx/MSP430F11x2_MSP430F12x_MSP430F12x2_Code_Examples/GCC_Makefile/fet120_ta_01/fet120_ta_01.out"
+    segments = extract_segments(filename)
     extract_bin_data(segments)
