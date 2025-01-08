@@ -138,3 +138,12 @@ def write_pc(ser, address):
     cmd = load_pc_cmd(address)
     ser.write(cmd)
     wait_ack(ser)
+    return
+
+def reset_msp(ser):
+    ser.dsrdtr=True
+    ser.dtr=True
+    pulse()
+    ser.dtr=False
+    ser.dsrdtr=False
+    return
